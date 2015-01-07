@@ -25,6 +25,25 @@ struct TreeNode {
   TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
 };
 
+// Returns true if this binary tree is a BST.
+bool IsBST(TreeNode* node, int prev_val) {
+  if (node->left) {
+    if (!IsBST(node->left, prev_val)) {
+      return false;
+    }
+  }
+  if (node->val < prev_val) {
+    return false;
+  }
+  prev_val = node->val;
+  if (node->right) {
+    if (!IsBST(node->right, prev_val)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 class BSTIterator {
 public:
   BSTIterator(TreeNode *root) {
@@ -99,6 +118,8 @@ int main() {
   n3->right = n4;
   n8->left = n7;
   n8->right = n9;
+
+  cout << "IsBST=" << IsBST(n5, -1) << endl;
 
   vector<int> ret;
   BSTIterator::Travel(n5, &ret);
