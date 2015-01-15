@@ -11,7 +11,7 @@
 
 #include <iostream>
 #include <vector>
-#include <stack>
+#include <queue>
 using namespace std;
 
 struct Node {
@@ -34,31 +34,31 @@ void Print(Node* root) {
 
 class BinTreeSibling {
 public:
-void SiblingTwoStack(Node* root) {
-  // use two stacks, one stack holds the nodes in the same level. While processing the 1st stack, adding the children to 2nd stack.
-  stack<Node*> s1, s2;
-  stack<Node*>* p1 = &s1;
-  stack<Node*>* p2 = &s2;
+void SiblingTwoQueues(Node* root) {
+  // use two queues, one queue holds the nodes in the same level. While processing the 1st queue, adding the children to 2nd queue.
+  queue<Node*> s1, s2;
+  queue<Node*>* p1 = &s1;
+  queue<Node*>* p2 = &s2;
 
   p1->push(root);
   while (!p1->empty()) {
-    stack<Node*>* tmp = p1;
+    queue<Node*>* tmp = p1;
     p1 = p2;
     p2 = tmp;
 
     // process the nodes in p2.
     Node* last = nullptr;
     while (!p2->empty()) {
-      Node* nd = p2->top();
+      Node* nd = p2->front();
       p2->pop();
       nd->next = last;
       last = nd;
       // add children for the next round.
-      if (nd->left) {
-	p1->push(nd->left);
-      }
       if (nd->right) {
 	p1->push(nd->right);
+      }
+      if (nd->left) {
+	p1->push(nd->left);
       }
     }
   }
@@ -128,8 +128,8 @@ int main() {
   vec.push_back(n6);
 
   BinTreeSibling bts;
-  bts.SiblingConstantSpace(n1);
-  //  bts.SiblingTwoStack(n1);
+  // bts.SiblingConstantSpace(n1);
+  bts.SiblingTwoQueues(n1);
   Print(n1);
 
   for (int i = 0; i < vec.size(); i++) {
