@@ -21,7 +21,9 @@ public:
     for (int i = 1; i < n; i++) {
       int a = A[i];
 
-      // for minus value, just find the first positive or the biggest negative element.
+      // for negative value, just find the first positive or the
+      // biggest negative element.  Be aware some edge case like pure
+      // negative element array.
       if (v < 0) {
 	if (a > v) {
 	  v = a;
