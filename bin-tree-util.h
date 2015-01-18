@@ -24,8 +24,11 @@ TreeNode* AddNewNode(int val, vector<TreeNode*>* vec) {
 
 void DeleteTree(vector<TreeNode*>* vec) {
   for (int i = 0; i < vec->size(); i++) {
-    delete (*vec)[i];
+    if ((*vec)[i] != nullptr) {
+      delete (*vec)[i];
+    }
   }
+  vec->clear();
 }
 
 string PrintTree(TreeNode* root) {
@@ -45,7 +48,10 @@ TreeNode* ArrayToTree(const vector<int>& vec, vector<TreeNode*>* nodes) {
   for (int v : vec) {
     AddNewNode(v, nodes);
   }
-  for (int i = 0; i < nodes->size(); ++i) {
+  for (int i = 0; i < nodes->size() / 2; ++i) {
+    if ((*nodes)[i] == nullptr) {
+      continue;
+    }
     int left = i * 2 + 1;
     int right = i * 2 + 2;
     if (left < nodes->size()) {
