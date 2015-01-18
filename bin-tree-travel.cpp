@@ -54,7 +54,7 @@ void InOrder(TreeNode* root) {
 }
 
 // left, right, top
-void PostOrder(TreeNode* root) {
+void PostOrder_Pair(TreeNode* root) {
   TreeNode* p = root;
   stack<pair<TreeNode*, TreeNode*> > s;  
   while (p != nullptr) {
@@ -86,6 +86,35 @@ void PostOrder(TreeNode* root) {
   cout << endl;
 }
 
+// left, right, top
+void PostOrder_TwoStacks(TreeNode* root) {
+  if (root == nullptr) {
+    return;
+  }
+  stack<TreeNode*> s1, s2;
+  s1.push(root);
+  // The basic idea is to visit the tree as order of top, left, right,
+  // then output the elememt to another stack to get the reverse
+  // result.
+  while (!s1.empty()) {
+    TreeNode* t = s1.top();
+    s1.pop();
+    s2.push(t);
+    if (t->left) {
+      s1.push(t->left);
+    }
+    if (t->right) {
+      s1.push(t->right);
+    }
+  }
+
+  while (!s2.empty()) {
+    cout << s2.top()->val << ", ";
+    s2.pop();
+  }
+  cout << endl;
+}
+
 void Test(const vector<int>& input_vec) {
   vector<TreeNode*> tree_vec;
   TreeNode* root = ArrayToTree(input_vec, &tree_vec);
@@ -99,7 +128,9 @@ void Test(const vector<int>& input_vec) {
   InOrder(root);
 
   cout << "post-order: ";
-  PostOrder(root);
+  PostOrder_Pair(root);
+  cout << "post-order: ";
+  PostOrder_TwoStacks(root);
 
   DeleteTree(&tree_vec);
 }
