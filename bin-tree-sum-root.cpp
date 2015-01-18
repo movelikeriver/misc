@@ -46,16 +46,12 @@
 
 #include <iostream>
 #include <vector>
+
+#include "bin-tree-util.h"
+
 using namespace std;
 
-// Definition for binary tree
-struct TreeNode {
-  int val;
-  TreeNode *left;
-  TreeNode *right;
-  TreeNode(int x) : val(x), left(NULL), right(NULL) {}
-};
- 
+
 class Solution {
 public:
   int sumNumbers(TreeNode *root) {
@@ -112,17 +108,6 @@ private:
   }
 };
 
-TreeNode* AddNewNode(int val, vector<TreeNode*>* vec) {
-  TreeNode* n = new TreeNode(val);
-  vec->push_back(n);
-  return n;
-}
-
-void DeleteTree(vector<TreeNode*>* vec) {
-  for (int i = 0; i < vec->size(); i++) {
-    delete (*vec)[i];
-  }
-}
 
 void TestSumNumbers() {
   vector<TreeNode*> vec;

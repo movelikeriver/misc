@@ -1,20 +1,16 @@
 // Find the lowest level common ancient node in a binary tree.
 //
 // Run:
-//  g++ common-ancient-in-tree.cpp
+//  g++ --std=c++11 common-ancient-in-tree.cpp
 //  ./a.out
 
 #include <iostream>
 #include <stack>
 #include <vector>
-using namespace std;
 
-struct TreeNode {
-  int val;
-  TreeNode *left;
-  TreeNode *right;
-  TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
-};
+#include "bin-tree-util.h"
+
+using namespace std;
 
 // Find the lowest level common ancient for n1 and n2, and n1 != n2.
 TreeNode* Find(TreeNode* root, TreeNode* n1, TreeNode* n2) {
