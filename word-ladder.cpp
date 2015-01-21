@@ -36,8 +36,8 @@ using namespace std;
 
 class Solution {
 public:
-  // the basic idea is like to find the min path in a graph, with a
-  // BFS approach.
+  // the basic idea is to build the graph by BFS, and travel the graph
+  // by DFS.
   vector<vector<string>> findLadders(string start, string end,
 				     unordered_set<string> &dict) {
     vector<string> dict_vec;
