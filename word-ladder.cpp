@@ -27,8 +27,9 @@
 //    All words contain only lowercase alphabetic characters.
 
 #include <iostream>
-#include <set>
+#include <stack>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 using namespace std;
@@ -37,55 +38,26 @@ using namespace std;
 class Solution {
 public:
   // the basic idea is to build the graph by BFS, and travel the graph
-  // by DFS.
+  // by DFS + DP.
   vector<vector<string>> findLadders(string start, string end,
 				     unordered_set<string> &dict) {
-    vector<string> dict_vec;
-    for (const string& s : dict) {
-      dict_vec.push_back(s);
-    }
+    unordered_map<string, unordered_set<string> > graph;
+    BuildGraph(start, end, &dict, &graph);
+    cout << "Graph has been built!" << endl;
+    PrintGraph(graph);
+    
+    unordered_map<string, vector<string> > m;
+    vector<string> res;
+    unordered_set<string> visited;
+    DFS(start, end, graph, &res, &m, &visited);
 
-    vector<int> solution;
-    vector<vector<int> > final;
-    vector<vector<string> > ret;
-    Graph g;
-    if (!BuildGraph(dict_vec, &g)) {
-      cout << "unexpected input dict" << endl;
-      return ret;
+    vector<vector<string> > final;
+    for (const string& str : res) {
+      vector<string> vec;
+      Split(str, &vec);
+      final.push_back(vec);
     }
-    cout << "graph has been built!" << endl;
-
-    set<int> visited;
-    int cur_min = dict_vec.size();  // max num as initial value
-    for (int i = 0; i < dict_vec.size(); i++) {
-      if (Dist(start, dict_vec[i]) == 1) {
-	solution.push_back(i);
-	visited.insert(i);
-	BFS(i, end, g, dict_vec, &visited, &cur_min, &solution, &final);
-	solution.pop_back();
-	visited.erase(i);
-      }
-    }
-
-    int minsize = -1;
-    for (const vector<int>& v : final) {
-      if (minsize == -1 || v.size() < minsize) {
-	minsize = v.size();
-      }
-    }
-
-    for (const vector<int>& v1 : final) {
-      if (v1.size() == minsize) {
-	vector<string> v2;
-	v2.push_back(start);
-	for (int i : v1) {
-	  v2.push_back(dict_vec[i]);
-	}
-	v2.push_back(end);
-	ret.push_back(v2);
-      }
-    }
-    return ret;
+    return final;
   }
 
   static void PrintVec(const vector<string>& vec) {
@@ -95,11 +67,48 @@ public:
     cout << "\n";
   }
 
-private:
-  struct Graph {
-    vector<set<int> > neighbors;
-  };
+  static void PrintGraph(const unordered_map<string, unordered_set<string> >& graph) {
+    for (const auto& it : graph) {
+      cout << it.first << ":  ";
+      for (const string& v : it.second) {
+	cout << v << ", ";
+      }
+      cout << "\n";
+    }
+    cout << endl;
+  }
 
+  static void Split(const string& str, vector<string>* vec) {
+    if (str.empty()) {
+      return;
+    }
+
+    int end = 0;
+    while(str[end] == ' ') {
+      end++;
+    }
+    // 1st non-space char.
+    int start = end;
+
+    for (; end < str.size();) {
+      if (str[end] == ' ') {
+	vec->push_back(str.substr(start, end-start));
+
+	while(str[end] == ' ') {
+	  end++;
+	}
+	start = end;
+      } else {
+	end++;
+      }
+    }
+
+    if (start < str.size()) {
+      vec->push_back(str.substr(start, end-start));
+    }
+  }
+
+private:
   int Dist(const string& s1, const string& s2) {
     if (s1.size() != s2.size()) {
       // unexpected
@@ -110,6 +119,8 @@ private:
       if (s1[i] != s2[i]) {
 	count++;
 	if (count == 2) {
+	  // > or = 2 doesn't matter. it's not necessary to compare
+	  // > further.
 	  return count;
 	}
       }
@@ -117,57 +128,102 @@ private:
     return count;
   }
 
-  bool BuildGraph(const vector<string>& dict_vec, Graph* g) {
-    for (int i = 0; i < dict_vec.size(); i++) {
-      set<int> neighbors;
-      for (int j = 0; j < dict_vec.size(); j++) {
-	if (i == j) {
-	  continue;
+  // build a graph with shortest path from start to end, it's allowed
+  // to have circle.
+  void BuildGraph(const string& start, const string& end,
+		  unordered_set<string>* dict,
+		  unordered_map<string, unordered_set<string> >* graph) {
+    dict->erase(start);
+
+    stack<string> process;
+    process.push(start);
+    while (!process.empty()) {
+      unordered_set<string> remove;
+      while (!process.empty()) {
+	string str = process.top();
+	process.pop();
+
+	// BFS
+	for (const string& v : *dict) {
+	  if (Dist(str, v) == 1) {
+	    (*graph)[str].insert(v);
+	    remove.insert(v);
+	  }
 	}
-	int dist = Dist(dict_vec[i], dict_vec[j]);
-	if (dist == -1) {
-	  return false;
-	}
-	if (dist == 1) {
-	  neighbors.insert(j);
+      }  // end while
+
+      if (remove.count(end)) {
+	// reach the end.
+	break;
+      }
+
+      // remove visited points. it's allowed to have circle, so we
+      // have to remove the nodes after while-loop.
+      for (const string& v : remove) {
+	dict->erase(v);
+      }
+
+      bool reach = false;
+      for (const string& v : remove) {
+	// prepare for the next degree.
+	process.push(v);
+	// in case reaching end, we can wrap up the graph building.
+	if (Dist(v, end) == 1) {
+	  (*graph)[v].insert(end);
+	  reach = true;
 	}
       }
-      g->neighbors.push_back(neighbors);
+      if (reach) {
+	break;
+      }
     }
-    return true;
   }
 
-
-
-  void BFS(const int i, const string& end,
-	   const Graph& g, const vector<string>& dict_vec,
-	   set<int>* visited, int* cur_min,
-	   vector<int>* solution, vector<vector<int> >* final) {
-    if (Dist(dict_vec[i], end) == 1) {
-      if (solution->size() > *cur_min) {
-	return;
+  // travel the graph with DFS + DP.
+  bool DFS(const string& start, const string& end,
+	   const unordered_map<string, unordered_set<string> >& graph,
+	   vector<string>* res,
+	   unordered_map<string, vector<string> >* m,
+	   unordered_set<string>* visited) {
+    if ((*m).count(start)) {
+      if ((*m)[start].empty()) {
+	return false;
       }
-
-      // keep the shortest path only for memory optimization.
-      if (solution->size() < *cur_min) {
-	final->clear();
-	*cur_min = solution->size();
-      }
-      final->push_back(*solution);
-      return;
+      *res = (*m)[start];
+      return true;
     }
 
-    for (int v : g.neighbors[i]) {
-      if (visited->count(v)) {
-	continue;
-      }
+    bool success = false;
+    if (start == end) {
+      res->push_back(end);
+      success = true;
+    } else {
+      // be aware of the nodes which are not the key of the map.
+      unordered_map<string, unordered_set<string> >::const_iterator it =
+	graph.find(start);
+      if (it != graph.end()) {
+	visited->insert(start);
+	// check all the neighbors
+	for (const string& v : it->second) {
+	  if (visited->count(v)) {
+	    // be aware of the circle.
+	    continue;
+	  }
 
-      solution->push_back(v);
-      visited->insert(v);
-      BFS(v, end, g, dict_vec, visited, cur_min, solution, final);
-      solution->pop_back();
-      visited->erase(v);
+	  vector<string> sub;
+	  if (DFS(v, end, graph, &sub, m, visited)) {
+	    for (const string& sv : sub) {
+	      res->push_back(start + " " + sv);
+	    }
+	    success = true;
+	  }
+	}
+	visited->erase(start);
+      }
     }
+    // save the result as DP
+    (*m)[start] = *res;
+    return success;
   }
 };
 
@@ -187,11 +243,33 @@ void TestFindLadders(const string& start, const string& end,
 
 int main() {
   {
+    vector<string> vec;
+    Solution::Split("as af asd ad", &vec);
+    Solution::PrintVec(vec);
+  }
+
+  {
+    vector<string> vec;
+    Solution::Split("  as af asd ad  ", &vec);
+    Solution::PrintVec(vec);
+  }
+
+  {
     string arr[] = {"hot","dot","dog","lot","log"};
     TestFindLadders("hit", "cog", arr, sizeof(arr)/sizeof(arr[0]));
   }
   {
     string arr[] = {"si","go","se","cm","so","ph","mt","db","mb","sb","kr","ln","tm","le","av","sm","ar","ci","ca","br","ti","ba","to","ra","fa","yo","ow","sn","ya","cr","po","fe","ho","ma","re","or","rn","au","ur","rh","sr","tc","lt","lo","as","fr","nb","yb","if","pb","ge","th","pm","rb","sh","co","ga","li","ha","hz","no","bi","di","hi","qa","pi","os","uh","wm","an","me","mo","na","la","st","er","sc","ne","mn","mi","am","ex","pt","io","be","fm","ta","tb","ni","mr","pa","he","lr","sq","ye"};
     TestFindLadders("qa", "sq", arr, sizeof(arr)/sizeof(arr[0]));
+  }
+
+  {
+    string arr[] = {"a","b","c"};
+    TestFindLadders("a", "c", arr, sizeof(arr)/sizeof(arr[0]));
+  }
+
+  {
+    string arr[] = {"ted","tex","red","tax","tad","den","rex","pee"};
+    TestFindLadders("red", "tax", arr, sizeof(arr)/sizeof(arr[0]));
   }
 }
