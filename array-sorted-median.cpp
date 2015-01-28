@@ -26,126 +26,67 @@ public:
     return FindMedian(arr1, arr2);
   }
 
+  // arr1.size() <= arr2.size(), the benefit to have vector instead of
+  // array is to catch out-of-bound error if anything wrong in the index.
   double FindMedian(const vector<int>& arr1, const vector<int>& arr2) {
     int n1 = arr1.size();
     int n2 = arr2.size();
-
-    // process some simple cases first.
-    if (n1 == 0) {
-      int idx = (n2-1) / 2;
-      if (n2 % 2) {
-	return arr2[idx];
-      }
-      return (float)(arr2[idx]+arr2[idx+1]) / 2;
-    }
-
-    if (arr1[0] >= arr2[n2-1]) {
-      int idx = (n2 + n1 - 1) / 2;
-      if ((n1 + n2) % 2 == 1) {
-	return arr2[idx];
-      }
-
-      // arr1 and arr2 have the same size.
-      if (n1 == n2) {
-	return (float)(arr1[0] + arr2[n2-1]) / 2;
-      }
-      return (float)(arr2[idx] + arr2[idx+1]) / 2;
-    }
-
-    if (arr2[0] >= arr1[n1-1]) {
-      int idx = (n1 + n2) / 2 - n1;
-      if ((n1 + n2) % 2 == 1) {
-	return arr2[idx];
-      }
-
-      // arr1 and arr2 have the same size.
-      if (n1 == n2) {
-	return (float)(arr1[n1-1] + arr2[0]) / 2;
-      }
-      return (float)(arr2[idx-1] + arr2[idx]) / 2;
-    }
-
     int start = 0;
-    int end = n1-1;
-    int m1 = (start+end)/2;
-    int m2 = (n1+n2+1)/2 - 1 - m1;
-
-    // Image the arrays like:
-    //
-    // 1 3(m1) 5
-    // 2 4(m2) 6
-    //
-    // 1 3(m1) 5
-    // 2 4 6(m2) 8
-    //
-    // The basic idea is to binary in arr1, until it reaches the
-    // bound. The binary is to compare m1,m1+1 and m2-1,m2, if m1>m2,
-    // it means that the median should be left of m1, if
-    // (m2-1)>(m1+1), it means the median should be in right of m1+1.
-    // The trick is to deal with the odd and even number of size.
-    while (true) {
-      if (arr1[m1] > arr2[m2]) {
-	end = m1;
-      } else if (m1+1 < n1 && m2-1 >= 0 &&
-		 arr1[m1+1] < arr2[m2-1]) {
-	start = m1+1;
-      } else {
-	break;
-      }
-
-      int new_m1 = (start+end)/2;
-      if (new_m1 == m1) {
-	break;
-      }
-      m1 = new_m1;
-      m2 = (n1+n2+1)/2 - 1 - m1;
-    }
-
-    cout << "m1, m2 = " << m1 << ", " << m2 << endl;
-
-    if (m1 == n1-1 || m1 == 0) {
-      // For (n1+n2)%2 == 0
-      //  arr1:  1 2 m1
-      //  arr2:  3 idx 4 m2 5 6 7
+    int end = n1;
+    int half = (n1+n2+1)/2;
+    while (start <= end) {
+      int m1 = (start + end) / 2;
+      int m2 = half - m1;
+      // Image the arrays are like below:
       //
-      // For (n1+n2)%2 == 1
-      //  arr1:  1 2 m1
-      //  arr2:  3 4 idx 5 m2 6 7 8
-      int idx = n2 - (n1+n2)/2 - 1;
-
-      // This part is tricky, we need to compare m1, idx, idx-1, idx+1.
-      if ((n1+n2)%2 == 1) {
-	if (arr1[m1] < arr2[idx]) {
-	  return arr2[idx];
-	}
-	return min(arr1[m1], arr2[idx+1]);
+      // 1 3(m1) 5
+      // 2 4(m2) 6
+      //
+      // 1 3(m1) 5
+      // 2 4 6(m2) 8
+      //
+      // The basic idea is to binary in arr1, until it reaches the
+      // bound. The binary is to compare m1,m1+1 and m2-1,m2, if m1>m2,
+      // it means that the median should be left of m1, if
+      // (m2-1)>(m1+1), it means the median should be in right of m1+1.
+      // The trick is to deal with the odd and even number of size.
+      if (m1>0 && m2<n2 && arr1[m1-1]>arr2[m2]) {
+	end = m1-1;
+	continue;
+      }
+      if (m2>0 && m1<n1 && arr1[m1]<arr2[m2-1]) {
+	start = m1+1;
+	continue;
       }
 
-      if (arr1[m1] < arr2[idx]) {
-	return (float)(arr2[idx]+arr2[idx+1]) / 2;
+      cout << "m1, m2 = " << m1 << ", " << m2 << endl;
+
+      int v1;
+      if (m1 == 0) {
+	v1 = arr2[m2-1];
+      } else if (m2 == 0) {
+	v1 = arr1[m1-1];
+      } else {
+	v1 = max(arr1[m1-1], arr2[m2-1]);
       }
-      if(arr1[m1] < arr2[idx+2]) {
-	return (float)(arr1[m1]+arr2[idx+1]) / 2;
+      if ((n1+n2) % 2 == 1) {
+	return v1;
       }
-      return (float)(arr2[idx+1]+arr2[idx+2]) / 2;
+
+      int v2;
+      if (m1 == n1) {
+	v2 = arr2[m2];
+      } else if (m2 == n2) {
+	v2 = arr1[m1];
+      } else {
+	v2 = min(arr1[m1], arr2[m2]);
+      }
+
+      return (float)(v1+v2)/2;
     }
 
-    // For (n1+n2)%2 == 1
-    //  1 2  3  m1 6 7
-    //    4 idx m2 8 9
-    //  m1 vs idx
-    if ((n1+n2)%2 == 1) {
-      int idx = m2-1;
-      return max(arr1[m1], arr2[idx]);
-    }
-
-    // For (n1+n2)%2 == 0
-    //  1 2 m1 6
-    //  5 m2 8 9
-    int v1 = max(arr1[m1], arr2[m2-1]);
-    int v2 = min(arr1[m1+1], arr2[m2]);
-
-    return (float)(v1+v2) / 2;
+    cout << "should never happen...\n";
+    return -1;
   }
 };
 
