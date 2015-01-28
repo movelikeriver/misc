@@ -6,106 +6,150 @@
 // respectively. Find the median of the two sorted arrays (from small
 // to large). The overall run time complexity should be O(log (m+n)).
 
+#include <algorithm>
 #include <iostream>
+#include <vector>
 using namespace std;
 
 class Solution {
 public:
-  // the basic idea is the binary search.  look for the rank of A-mid
-  // in array B, if the rank is bigger than median, it means that the
-  // median should be between A-s1 and A-mid, then set A-mid = (A-s1 +
-  // A-mid) / 2, try to look for the rank in array B again, until find
-  // the median.
   double findMedianSortedArrays(int A[], int m, int B[], int n) {
-    if (m == 0) {
-      return B[n/2];
-    }
-    if (n == 0) {
-      return A[m/2];
+    if (m == 0 && n == 0) {
+      return 0;
     }
 
-    int rank = (m + n + 1) / 2;
-    bool is_even = ((m+n) % 2) == 0;
-    int s1 = 0;
-    int e1 = m-1;
-    int s2 = 0;
-    int e2 = n-1;
-    int cur = (s1+e1+1)/2;
-
-    while (s1 < e1 - 1) {
-      int idx = FindRank(B, s2, e2, A[cur]);
-      if (cur + idx + 1 == rank) {
-	return A[cur];
-      }
-      if (cur + idx > rank) {
-	// the median should be in left part.
-	e1 = cur;
-	cur = (s1 + e1 + 1) / 2;
-	e2 = idx;
-      } else {
-	// the median should be in right part.
-	s1 = cur;
-	cur = (s1 + e1 + 1) / 2;
-	s2 = idx;
-      }
+    vector<int> arr1(A, A+m);
+    vector<int> arr2(B, B+n);
+    if (m > n) {
+      return FindMedian(arr2, arr1);
     }
-    int t = A[s1];
-    while (s1 + s2 < rank) {
-      if (A[s1] < B[s2]) {
-	s1++;
-	t = A[s1];
-      } else {
-	s2++;
-	t = B[s2];
-      }
-    }
-    return t;
+    return FindMedian(arr1, arr2);
   }
-    
-  // find the rank of t in sorted array arr[].
-  int FindRank(int arr[], int start, int end, int t) {
-    int l = start;
-    int h = end;
-    while (l < h - 1) {
-      int m = (l + h) / 2;
-      if (arr[m] == t) {
-	return m + 1;
+
+  double FindMedian(const vector<int>& arr1, const vector<int>& arr2) {
+    int n1 = arr1.size();
+    int n2 = arr2.size();
+
+    // process some simple cases first.
+    if (n1 == 0) {
+      int idx = (n2-1) / 2;
+      if (n2 % 2) {
+	return arr2[idx];
       }
-      if (arr[m] > t) {
-	h = m;
+      return (float)(arr2[idx]+arr2[idx+1]) / 2;
+    }
+
+    if (arr1[0] >= arr2[n2-1]) {
+      int idx = (n2 + n1 - 1) / 2;
+      if ((n1 + n2) % 2 == 1) {
+	return arr2[idx];
+      }
+
+      // arr1 and arr2 have the same size.
+      if (n1 == n2) {
+	return (float)(arr1[0] + arr2[n2-1]) / 2;
+      }
+      return (float)(arr2[idx] + arr2[idx+1]) / 2;
+    }
+
+    if (arr2[0] >= arr1[n1-1]) {
+      int idx = (n1 + n2) / 2 - n1;
+      if ((n1 + n2) % 2 == 1) {
+	return arr2[idx];
+      }
+
+      // arr1 and arr2 have the same size.
+      if (n1 == n2) {
+	return (float)(arr1[n1-1] + arr2[0]) / 2;
+      }
+      return (float)(arr2[idx-1] + arr2[idx]) / 2;
+    }
+
+    int start = 0;
+    int end = n1-1;
+    int m1 = (start+end)/2;
+    int m2 = (n1+n2+1)/2 - 1 - m1;
+
+    // Image the arrays like:
+    //
+    // 1 3(m1) 5
+    // 2 4(m2) 6
+    //
+    // 1 3(m1) 5
+    // 2 4 6(m2) 8
+    //
+    // The basic idea is to binary in arr1, until it reaches the
+    // bound. The binary is to compare m1,m1+1 and m2-1,m2, if m1>m2,
+    // it means that the median should be left of m1, if
+    // (m2-1)>(m1+1), it means the median should be in right of m1+1.
+    // The trick is to deal with the odd and even number of size.
+    while (true) {
+      if (arr1[m1] > arr2[m2]) {
+	end = m1;
+      } else if (m1+1 < n1 && m2-1 >= 0 &&
+		 arr1[m1+1] < arr2[m2-1]) {
+	start = m1+1;
       } else {
-	l = m;
+	break;
       }
+
+      int new_m1 = (start+end)/2;
+      if (new_m1 == m1) {
+	break;
+      }
+      m1 = new_m1;
+      m2 = (n1+n2+1)/2 - 1 - m1;
     }
-    if (arr[l] > t) {
-      return l;
+
+    cout << "m1, m2 = " << m1 << ", " << m2 << endl;
+
+    if (m1 == n1-1 || m1 == 0) {
+      // For (n1+n2)%2 == 0
+      //  arr1:  1 2 m1
+      //  arr2:  3 idx 4 m2 5 6 7
+      //
+      // For (n1+n2)%2 == 1
+      //  arr1:  1 2 m1
+      //  arr2:  3 4 idx 5 m2 6 7 8
+      int idx = n2 - (n1+n2)/2 - 1;
+
+      // This part is tricky, we need to compare m1, idx, idx-1, idx+1.
+      if ((n1+n2)%2 == 1) {
+	if (arr1[m1] < arr2[idx]) {
+	  return arr2[idx];
+	}
+	return min(arr1[m1], arr2[idx+1]);
+      }
+
+      if (arr1[m1] < arr2[idx]) {
+	return (float)(arr2[idx]+arr2[idx+1]) / 2;
+      }
+      if(arr1[m1] < arr2[idx+2]) {
+	return (float)(arr1[m1]+arr2[idx+1]) / 2;
+      }
+      return (float)(arr2[idx+1]+arr2[idx+2]) / 2;
     }
-    return h + 1;
+
+    // For (n1+n2)%2 == 1
+    //  1 2  3  m1 6 7
+    //    4 idx m2 8 9
+    //  m1 vs idx
+    if ((n1+n2)%2 == 1) {
+      int idx = m2-1;
+      return max(arr1[m1], arr2[idx]);
+    }
+
+    // For (n1+n2)%2 == 0
+    //  1 2 m1 6
+    //  5 m2 8 9
+    int v1 = max(arr1[m1], arr2[m2-1]);
+    int v2 = min(arr1[m1+1], arr2[m2]);
+
+    return (float)(v1+v2) / 2;
   }
 };
 
 int main() {
-  cout << "FindRank()\n";
-  // FindRank()
-  {
-    int A[] = {1, 3, 5, 7};
-    Solution s;
-    int idx = s.FindRank(A, 0, sizeof(A)/sizeof(A[0]), 4);
-    cout << idx << endl;
-  }
-  {
-    int A[] = {1, 3, 5};
-    Solution s;
-    int idx = s.FindRank(A, 0, sizeof(A)/sizeof(A[0]), 4);
-    cout << idx << endl;
-    idx = s.FindRank(A, 0, sizeof(A)/sizeof(A[0]), 6);
-    cout << idx << endl;
-    idx = s.FindRank(A, 0, sizeof(A)/sizeof(A[0]), 0);
-    cout << idx << endl;
-    idx = s.FindRank(A, 0, sizeof(A)/sizeof(A[0]), 2);
-    cout << idx << endl;
-  }
-
   cout << "findMedianSortedArrays()\n";
   // findMedianSortedArrays()
   {
@@ -114,7 +158,7 @@ int main() {
     Solution s;
     double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
 					B, sizeof(B)/sizeof(B[0]));
-    cout << v << endl;
+    cout << "6 == " << v << endl;
   }
   {
     int A[] = {};
@@ -122,7 +166,7 @@ int main() {
     Solution s;
     double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
 					B, sizeof(B)/sizeof(B[0]));
-    cout << v << endl;
+    cout << "1 == " << v << endl;
   }
   {
     int A[] = {};
@@ -130,6 +174,110 @@ int main() {
     Solution s;
     double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
 					B, sizeof(B)/sizeof(B[0]));
-    cout << v << endl;
+    cout << "2.5 == " << v << endl;
+  }
+  {
+    int A[] = {};
+    int B[] = {1, 1};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "1 == " << v << endl;
+  }
+  {
+    int A[] = {1, 2};
+    int B[] = {1, 2};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "1.5 == " << v << endl;
+  }
+  {
+    int A[] = {1, 1};
+    int B[] = {1, 2};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "1 == " << v << endl;
+  }
+  {
+    int A[] = {1, 1, 3, 3};
+    int B[] = {1, 1, 3, 3};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2 == " << v << endl;
+  }
+  {
+    int A[] = {2};
+    int B[] = {1, 3};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2 == " << v << endl;
+  }
+  {
+    int A[] = {2};
+    int B[] = {1, 3, 4};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2.5 == " << v << endl;
+  }
+  {
+    int A[] = {1};
+    int B[] = {2, 3, 4};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2.5 == " << v << endl;
+  }
+  {
+    int A[] = {1, 4};
+    int B[] = {2, 3};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2.5 == " << v << endl;
+  }
+  {
+    int A[] = {1, 2, 2};
+    int B[] = {1, 2, 3};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2 == " << v << endl;
+  }
+  {
+    int A[] = {1, 2, 3};
+    int B[] = {1, 2, 2};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "2 == " << v << endl;
+  }
+  {
+    int A[] = {4};
+    int B[] = {1, 2, 3, 5};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "3 == " << v << endl;
+  }
+  {
+    int A[] = {3};
+    int B[] = {1, 2, 4, 5};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "3 == " << v << endl;
+  }
+  {
+    int A[] = {5, 6};
+    int B[] = {1, 2, 3, 4, 7};
+    Solution s;
+    double v = s.findMedianSortedArrays(A, sizeof(A)/sizeof(A[0]),
+					B, sizeof(B)/sizeof(B[0]));
+    cout << "4 == " << v << endl;
   }
 }
